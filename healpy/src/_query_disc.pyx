@@ -324,14 +324,14 @@ def boundaries(nside, pix, step=1, nest=False):
 cdef pixset_to_array(rangeset[int64] &pixset, buff=None):
     cdef int64 i, n
     n = pixset.nval()
-    cdef np.ndarray[np.int64_t, ndim=1] ipix 
-        
-    if buff is None :
+    cdef np.ndarray[np.int64_t, ndim=1] ipix
+
+	if buff is None :
        ipix = np.empty(n, dtype=np.int64)
     else :
        if n>=len(buff) :
            raise ValueError("Buffer too small to contain return value")
-       ipix = buff[:n]      
+       ipix = buff[:n]
     
     cdef int64 a, b, ii, ip
     ii = 0

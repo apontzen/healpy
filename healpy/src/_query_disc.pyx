@@ -326,7 +326,7 @@ cdef pixset_to_array(rangeset[int64] &pixset, buff=None):
     n = pixset.nval()
     cdef np.ndarray[np.int64_t, ndim=1] ipix
 
-	if buff is None :
+    if buff is None :
        ipix = np.empty(n, dtype=np.int64)
     else :
        if n>=len(buff) :

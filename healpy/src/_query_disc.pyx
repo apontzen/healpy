@@ -10,7 +10,7 @@ from _common cimport int64, pointing, rangeset, vec3, Healpix_Ordering_Scheme, R
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def query_disc(nside, vec, radius, inclusive = False, fact = 4, nest = False, np.ndarray[np.int64_t, ndim=1] buff=None):
+def query_disc(nside, vec, float radius, inclusive = False, fact = 4, nest = False, np.ndarray[np.int64_t, ndim=1] buff=None):
     """Returns pixels whose centers lie within the disk defined by
     *vec* and *radius* (in radians) (if *inclusive* is False), or which
     overlap with this disk (if *inclusive* is True).
@@ -68,9 +68,11 @@ def query_disc(nside, vec, radius, inclusive = False, fact = 4, nest = False, np
         if nest and (factor == 0 or (factor & (factor - 1) != 0)):
             raise ValueError('fact must be a power of 2, less than 2**30 when '
                              'nest is True (fact=%d)' % (fact))
-        hb.query_disc_inclusive(ptg, radius, pixset, factor)
+        with nogil:
+            hb.query_disc_inclusive(ptg, radius, pixset, factor)
     else:
-        hb.query_disc(ptg, radius, pixset)
+        with nogil:
+            hb.query_disc(ptg, radius, pixset)
 
     return pixset_to_array(pixset, buff)
 
@@ -137,13 +139,15 @@ def query_polygon(nside, vertices, inclusive = False, fact = 4, nest = False, np
         if nest and (factor == 0 or (factor & (factor - 1) != 0)):
             raise ValueError('fact must be a power of 2, less than 2**30 when '
                              'nest is True (fact=%d)' % (fact))
-        hb.query_polygon_inclusive(vert, pixset, factor)
+        with nogil:
+            hb.query_polygon_inclusive(vert, pixset, factor)
     else:
-        hb.query_polygon(vert, pixset)
+        with nogil:
+            hb.query_polygon(vert, pixset)
 
     return pixset_to_array(pixset, buff)
 
-def query_strip(nside, theta1, theta2, inclusive = False, nest = False, np.ndarray[np.int64_t, ndim=1] buff=None):
+def query_strip(int nside, float theta1, float theta2, bool inclusive = False, bool nest = False, np.ndarray[np.int64_t, ndim=1] buff=None):
     """Returns pixels whose centers lie within the colatitude range
     defined by *theta1* and *theta2* (if inclusive is False), or which 
     overlap with this region (if *inclusive* is True). If theta1<theta2, the
@@ -185,7 +189,8 @@ def query_strip(nside, theta1, theta2, inclusive = False, nest = False, np.ndarr
     cdef T_Healpix_Base[int64] hb = T_Healpix_Base[int64](nside, scheme, SET_NSIDE)
     # Call query_polygon
     cdef rangeset[int64] pixset
-    hb.query_strip(theta1, theta2, inclusive, pixset)
+    with nogil:
+        hb.query_strip(theta1, theta2, inclusive, pixset)
 
     return pixset_to_array(pixset, buff)
 
@@ -225,7 +230,6 @@ def _boundaries_multiple(nside, pix, step=1, nest=False):
     for j in range(npix):
         if pix[j] >= maxnpix:
             raise ValueError('Pixel identifier is too large')
-
         hb.boundaries(pix[j], step, bounds)
         for i in range(n):
             out[j, 0, i] = bounds[i].x
@@ -320,24 +324,26 @@ def boundaries(nside, pix, step=1, nest=False):
 cdef pixset_to_array(rangeset[int64] &pixset, buff=None):
     cdef int64 i, n
     n = pixset.nval()
-    cdef np.ndarray[np.int64_t, ndim=1] ipix 
-   		
-    if buff is None :
+    cdef np.ndarray[np.int64_t, ndim=1] ipix
+
+	if buff is None :
        ipix = np.empty(n, dtype=np.int64)
     else :
        if n>=len(buff) :
            raise ValueError("Buffer too small to contain return value")
-       ipix = buff[:n] 		
+       ipix = buff[:n]
     
     cdef int64 a, b, ii, ip
     ii = 0
     n = pixset.size()
-    for i in range(n):
-        a = pixset.ivbegin(i)
-        b = pixset.ivend(i)
-        for ip in range(a, b):
-            ipix[ii] = ip
-            ii += 1
+    
+    with nogil:
+        for i in range(n):
+            a = pixset.ivbegin(i)
+            b = pixset.ivend(i)
+            for ip in range(a, b):
+                ipix[ii] = ip
+                ii += 1
     return ipix
 
 cdef bool isnsideok(int nside):

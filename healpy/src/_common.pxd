@@ -31,8 +31,8 @@ cdef extern from "rangeset.h":
     cdef cppclass rangeset[T]:
         tsize size()
         int64 nval()
-        T ivbegin(tdiff i)
-        T ivend(tdiff i)
+        T ivbegin(tdiff i) nogil
+        T ivend(tdiff i) nogil
 
 cdef extern from "vec3.h":
     cdef cppclass vec3:
@@ -97,14 +97,14 @@ cdef extern from "healpix_base.h":
        double max_pixrad(I ring)
        void boundaries(I pix, size_t step, vector[vec3] &out)
        arr[int] swap_cycles()
-       void query_disc(pointing ptg, double radius, rangeset[I]& pixset) 
+       void query_disc(pointing ptg, double radius, rangeset[I]& pixset) nogil
        void query_disc_inclusive(pointing ptg, double radius,
-                                 rangeset[I]& pixset, int fact)
-       void query_polygon(vector[pointing] vert, rangeset[I]& pixset)
+                                 rangeset[I]& pixset, int fact) nogil
+       void query_polygon(vector[pointing] vert, rangeset[I]& pixset) nogil
        void query_polygon_inclusive(vector[pointing] vert,
-                                    rangeset[I]& pixset, int fact)
+                                    rangeset[I]& pixset, int fact) nogil
        void query_strip(double theta1, double theta2, bool inclusive,
-                        rangeset[I]& pixset)
+                        rangeset[I]& pixset) nogil
 
 cdef extern from "healpix_map.h":
     cdef cppclass Healpix_Map[T]:
